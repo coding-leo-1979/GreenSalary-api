@@ -8,7 +8,11 @@ const influencerContractSchema = new mongoose.Schema({
   advertiser_id: { type: Number, required: true, ref: 'Advertiser' },
   influencer_id: { type: Number, required: true, ref: 'Influencer' },
   joined_at: { type: Date, required: true },
-  ad_url: { type: String, default: null },
+
+  url: { type: String, default: null },
+  keywordTest: { type: Boolean, default: false },
+  conditiondTest: { type: Boolean, default: false },
+  
   review_status: {
     type: String,
     enum: ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_FROM_ADV', 'REVIEW_FROM_INF'],
@@ -19,6 +23,6 @@ const influencerContractSchema = new mongoose.Schema({
 });
 
 // Auto-increment 설정
-influencerSchema.plugin(AutoIncrement, { inc_field: 'influencerContractId' });
+influencerContractSchema.plugin(AutoIncrement, { inc_field: 'influencerContractId' });
 
 module.exports = mongoose.model('InfluencerContract', influencerContractSchema);

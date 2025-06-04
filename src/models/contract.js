@@ -9,7 +9,7 @@ const contractSchema = new mongoose.Schema({
   title: { type: String, required: true },
   reward: { type: Number, required: true },
   recruits: { type: Number, required: true },
-  participants: { type: Number, default: 0},
+  participants: { type: Number, default: 0 },
   upload_start_date: { type: Date, required: true },
   upload_end_date: { type: Date, required: true },
   maintain_start_date: { type: Date },
