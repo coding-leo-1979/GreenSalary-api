@@ -1,4 +1,4 @@
-// src/models/influencers.js
+// src/models/influencer.js
 
 const mongoose = require('mongoose');
 const AutoIncrement = require('mongoose-sequence')(mongoose);

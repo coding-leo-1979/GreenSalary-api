@@ -1,13 +1,17 @@
-// src/models/contracts.js
+// src/models/contract.js
 
 const mongoose = require('mongoose');
-const { nanoid } = require('nanoid');
+const { nanoid, customAlphabet } = require('nanoid');
+
+const generateId = () => nanoid(16);
+const generateAccessCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 10);
 
 const contractSchema = new mongoose.Schema({
-  id: { type: String, default: () => nanoid(16), unique: true },
+  id: { type: String, unique: true },
+  access_code: { type: String, unique: true },
   advertiser_id: { type: String, required: true, ref: 'Advertiser' },
   title: { type: String, required: true },
-  reward: { type: Number, required: true },
+  reward: { type: String, required: true },
   recruits: { type: Number, required: true },
   participants: { type: Number, default: 0 },
   upload_start_date: { type: Date, required: true },
@@ -33,6 +37,37 @@ const contractSchema = new mongoose.Schema({
   description: { type: String },
   photo_url: { type: String },
   created_at: { type: Date, default: Date.now }
+});
+
+// 충돌 방지
+contractSchema.pre('validate', async function (next) {
+  const Contract = mongoose.model('Contract');
+
+  if (!this.id) {
+    let unique = false;
+    while (!unique) {
+      const tempId = generateId();
+      const existing = await Contract.findOne({ id: tempId });
+      if (!existing) {
+        this.id = tempId;
+        unique = true;
+      }
+    }
+  }
+
+  if (!this.access_code) {
+    let unique = false;
+    while (!unique) {
+      const tempCode = generateAccessCode();
+      const existing = await Contract.findOne({ access_code: tempCode });
+      if (!existing) {
+        this.access_code = tempCode;
+        unique = true;
+      }
+    }
+  }
+
+  next();
 });
 
 module.exports = mongoose.model('Contract', contractSchema);

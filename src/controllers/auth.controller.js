@@ -65,15 +65,19 @@ exports.signin = async (req, res) => {
         let user_id;
 
         // advertiser 테이블에서 사용자 찾기
-        if (role == 'advertiser') {
+        if (role === 'advertiser') {
             user = await Advertiser.findOne({ email });
-            user_id = user.advertiserId;
+            if (user) {
+                user_id = user.advertiserId;
+            }
         }
 
         // influencer 테이블에서 사용자 찾기
-        if (role == 'influencer') {
+        if (role === 'influencer') {
             user = await Influencer.findOne({ email });
-            user_id = user.influencerId;
+            if (user) {
+                user_id = user.influencerId;
+            }
         }
 
         // 사용자를 찾을 수 없는 경우

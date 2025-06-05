@@ -11,6 +11,7 @@ const cloudinary = require('cloudinary').v2;
 // 라우팅
 const authRoutes = require('./routes/auth.route');
 const advertiserRoutes = require('./routes/advertiser.route');
+const influencerRoutes = require('./routes/influencer.route');
 
 // 환경 변수 설정
 require('dotenv').config();
@@ -48,6 +49,7 @@ app.use(express.json());
 // 그룹 라우트 설정
 app.use('/api/auth', authRoutes);
 app.use('/api/advertiser', advertiserRoutes);
+app.use('/api/influencer', influencerRoutes);
 
 // 이미지 업로드 및 URL 생성 라우트
 app.post('/api/image', upload.single('image'), (req, res) => {
