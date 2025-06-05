@@ -233,6 +233,7 @@ exports.readInfluencers = async (req, res) => {
             const submit_reward_available = review_available && review_status !== 'PENDING';
 
             return {
+                joinId: ic.influencerContractId,
                 influencer_id: ic.influencer_id,
                 influencer_name: influencer.name,
                 influencer_description: influencer.description,
