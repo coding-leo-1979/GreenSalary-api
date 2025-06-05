@@ -306,3 +306,115 @@ exports.readURL = async (req, res) => {
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };
+
+// 마이페이지
+// GET /api/influencer/mypage
+exports.readMypage = async (req, res) => {
+    // email: Influencer.email
+    // name: Influencer.name
+    // description: Influencer.description
+    // walletAddress: Influencer.wallet_address
+    try {
+        const influencer = await Influencer.findOne({ influencerId: req.user.userId }).lean();
+        if (!influencer) {
+            return res.status(404).json({ message: '존재하지 않는 사용자입니다.' });
+        }
+
+        return res.status(200).json({
+            email: influencer.email,
+            name: influencer.name,
+            description: influencer.description || '',
+            walletAddress: influencer.wallet_address
+        });
+    } catch (error) {
+        console.error('readMypage error:', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
+// 마이페이지 정보 수정
+// POST /api/influencer/mypage/profile
+exports.updateMypageProfile = async (req, res) => {
+    // 다음 3개 수정 가능
+    // name: Influencer.name
+    // description: Influencer.description
+    // walletAddress: Influencer.wallet_address
+    try {
+        const { name, description, walletAddress } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ message: '이름은 공백일 수 없습니다.' });
+        }
+        if (!walletAddress) {
+            return res.status(400).json({ message: '지갑 주소는 공백일 수 없습니다.' });
+        }
+
+        const updated = await Influencer.findOneAndUpdate(
+            { influencerId: req.user.userId },
+            {
+                name,
+                description: description || '',
+                wallet_address: walletAddress
+            },
+            { new: true }
+        ).lean();
+
+        if (!updated) {
+            return res.status(404).json({ message: '존재하지 않습니다.' });
+        }
+
+        return res.status(200).json({
+            message: '프로필이 수정되었습니다.',
+            name: updated.name,
+            description: updated.description,
+            walletAddress: updated.wallet_address
+        });
+
+    } catch (error) {
+        console.error('updateMypageProfile error: ', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
+// 마이페이지 비밀번호 수정
+// POST /api/influencer/mypage/password
+exports.updateMypagePassword = async (req, res) => {
+    // 기존 비밀번호
+    // 새 비밀번호
+    // 새 비밀번호 확인
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({ message: '잘못된 요청입니다.' });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: '새 비밀번호가 일치하지 않습니다.' });
+        }
+
+        if (currentPassword == newPassword) {
+            return res.status(400).json({ message: '새 비밀번호가 기존 비밀번호와 동일합니다.' });
+        }
+
+        const influencer = await Influencer.findOne({ influencerId: req.user.userId });
+        if (!influencer) {
+            return res.status(404).json({ message: '존재하지 않습니다.' });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, influencer.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: '기존 비밀번호가 올바르지 않습니다.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        influencer.password = hashedPassword;
+        await influencer.save();
+
+        return res.status(200).json({ message: '비밀번호가 성공적으로 변경되었습니다.' });
+
+    } catch (error) {
+        console.error('updateMypagePassword error: ', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
