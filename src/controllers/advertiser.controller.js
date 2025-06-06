@@ -300,10 +300,10 @@ exports.payInfluencers = async (req, res) => {
     ### Request Body
     {
         "joinIds": [
-            "joinId1", // Number
-            "joinId2",
-            "joinId3",
-            "joinId4",
+            { "joinId": 1, "paidAt": "2025-06-06T21:15:33.000Z" },
+            { "joinId": 1, "paidAt": "2025-06-06T21:15:33.000Z" },
+            { "joinId": 1, "paidAt": "2025-06-06T21:15:33.000Z" },
+            { "joinId": 1, "paidAt": "2025-06-06T21:15:33.000Z" }
             ///
         ]
     }
@@ -347,14 +347,18 @@ exports.payInfluencers = async (req, res) => {
         const failDetails = [];
 
         for (const joinId of joinIds) {
+            const { joinId, paidAt } = item;
+
             const ic = await InfluencerContract.findOne({ influencerContractId: joinId, contract_id: contractId });
-            const influencer = await Influencer.findOne({ influencerId: ic.influencer_id });
-            const influencer_name = influencer.name;
             if (!ic) {
                 failCount++;
                 failDetails.push({ influencer_name, reason: '인플루언서 계약을 찾을 수 없습니다.' });
                 continue;
             }
+
+            const influencer = await Influencer.findOne({ influencerId: ic.influencer_id });
+            const influencer_name = influencer.name;
+
 
             if (!(ic.review_status === 'APPROVED' || ic.review_status === 'REJECTED')) {
                 failCount++;
@@ -377,7 +381,7 @@ exports.payInfluencers = async (req, res) => {
             }
             */
             ic.reward_paid = true;
-            ic.reward_paid_at = now;
+            ic.reward_paid_at = new Date(paidAt);
             await ic.save();
             successCount++;
         }
