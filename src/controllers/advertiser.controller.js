@@ -243,6 +243,7 @@ exports.readInfluencers = async (req, res) => {
                 influencer_id: ic.influencer_id,
                 influencer_name: influencer.name,
                 influencer_description: influencer.description,
+                influencer_walletAddress: influencer.wallet_address,
 
                 url: ic.url,
                 keywordTest: ic.keywordTest,
@@ -434,6 +435,64 @@ exports.readTransactions = async (req, res) => {
         return res.status(200).json(response);
     } catch (error) {
         console.error('readPayments error:', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
+// 광고 인플루언서 문의하기
+// POST /api/advertiser/ask/:joinId
+exports.ask = async (req, res) => {
+    /*
+    1. submit_review_available인지 확인하기
+    2. review_status를 REVIEW_FROM_ADV로 바꾸기
+
+    */
+    try {
+        const { joinId } = req.params;
+
+        // 해당 인플루언서 계약 조회
+        const influencerContract = await InfluencerContract.findOne({ influencerContractId: joinId });
+        if (!influencerContract) {
+            return res.status(404).json({ message: '해당 인플루언서 계약 정보를 찾을 수 없습니다.' });
+        }
+
+        // 해당 계약 정보 조회
+        const contract = await Contract.findOne({ id: influencerContract.contract_id });
+        if (!contract) {
+            return res.status(404).json({ message: '광고 계약이 존재하지 않습니다.' });
+        }
+
+        // 리뷰 가능 기간 계산
+        const today = new Date();
+        const uploadStart = new Date(contract.upload_start_date);
+        const uploadEnd = new Date(contract.upload_end_date);
+        const reviewDeadline = new Date(uploadEnd);
+        reviewDeadline.setDate(reviewDeadline.getDate() + 1);
+
+        const review_available = today >= uploadStart && today <= reviewDeadline;
+
+        // 조건 확인
+        const isApproved = influencerContract.review_status === 'APPROVED';
+        const isRewardUnpaid = influencerContract.reward_paid === false;
+
+        const submit_review_available = review_available && isApproved && isRewardUnpaid;
+
+        if (!submit_review_available) {
+            return res.status(400).json({
+                message: '리뷰 요청이 불가능한 상태입니다. (조건 불충족)',
+            });
+        }
+
+        // 상태 변경
+        influencerContract.review_status = 'REVIEW_FROM_ADV';
+        await influencerContract.save();
+
+        return res.status(200).json({
+            message: '리뷰 요청이 성공적으로 처리되었습니다.',
+            new_status: influencerContract.review_status,
+        });
+    } catch (error) {
+        console.log('ask error: ', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };
