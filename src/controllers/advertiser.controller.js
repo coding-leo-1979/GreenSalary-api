@@ -36,6 +36,7 @@ exports.createContract = async (req, res) => {
             site,
             media,
             description,
+            photo_url
         } = req.body;
 
         // 필수 항목 검증
@@ -62,6 +63,7 @@ exports.createContract = async (req, res) => {
                 media_image: media?.minImageCount || 0,
             },
             description: description || '',
+            photo_url
             // ⚠️ id, access_code는 Schema에서 자동 생성 및 중복 방지
         });
 
