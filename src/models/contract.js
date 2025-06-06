@@ -31,8 +31,7 @@ const contractSchema = new mongoose.Schema({
             media_text: { type: Number, required: false },
             media_image: { type: Number, required: false },
         },
-    ],
-    default: []
+    ]
   },
   description: { type: String },
   photo_url: { type: String },

@@ -1,7 +1,6 @@
 // src/controllers/advertiser.controller.js
 
 const bcrypt = require('bcrypt');
-const { nanoid } = require('nanoid');
 const Contract = require('../models/contract');
 const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
@@ -58,7 +57,10 @@ exports.createContract = async (req, res) => {
             keywords: keywords || [],
             conditions: conditions || [],
             site,
-            media: media || [],
+            media: {
+                media_text: media?.minTextLength || 0,
+                media_image: media?.minImageCount || 0,
+            },
             description: description || '',
             // ⚠️ id, access_code는 Schema에서 자동 생성 및 중복 방지
         });
