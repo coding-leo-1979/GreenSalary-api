@@ -1,5 +1,6 @@
 // src/controllers/auth.controller.js
 
+const Admin = require('../models/admin');
 const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
 const bcrypt = require('bcrypt');
@@ -111,3 +112,32 @@ exports.signin = async (req, res) => {
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 }
+
+// 관리자 로그인
+// POST /api/auth/admin
+exports.adminSignin = async (req, res) => {
+    try {
+        const { role, id, pw } = req.body;
+
+        if (role !== 'admin' || !id || !pw) {
+            return res.status(400).json({ message: '잘못된 요청입니다.' });
+        }
+
+        const admin = await Admin.findOne({ id });
+        if (!admin) {
+            return res.status(401).json({ message: '아이디가 올바르지 않습니다.' });
+        }
+
+        if (pw !== admin.pw) {
+            return res.status(401).json({ message: '비밀번호가 올바르지 않습니다.' });
+        }
+
+        const payload = {
+            userId: id
+        }
+
+    } catch (error) {
+        console.log('example error: ', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};

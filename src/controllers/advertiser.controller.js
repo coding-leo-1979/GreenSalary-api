@@ -419,7 +419,7 @@ exports.readTransactions = async (req, res) => {
 
         const response = await Promise.all(
             transactions.map(async (tx) => {
-                const influencer = await Influencer.findOne({ influencer_id: tx.influencer_id });
+                const influencer = await Influencer.findOne({ influencerId: tx.influencer_id });
                 return {
                     influencer_name: influencer?.name || 'Unknown',
                     amount: contract.reward,
