@@ -133,11 +133,24 @@ exports.adminSignin = async (req, res) => {
         }
 
         const payload = {
-            userId: id
-        }
+            role: 'admin',
+            userId: admin.id,
+            userName: admin.name
+        };
 
+        const accessToken = jwt.sign(
+            payload,
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: '12h' }
+        )
+
+        return res.status(200).json({
+            accessToken,
+            role: 'admin',
+            message: '관리자 로그인되었습니다.'
+        })
     } catch (error) {
-        console.log('example error: ', error);
+        console.log('adminSignin error: ', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };

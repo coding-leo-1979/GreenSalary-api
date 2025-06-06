@@ -13,7 +13,7 @@ router.get('/contract/:contractId/influencers', verifyToken, verifyRole('adverti
 router.post('/contract/:contractId/pay', verifyToken, verifyRole('advertiser'), payInfluencers);
 router.get('/contract/:contractId/transactions', verifyToken, verifyRole('advertiser'), readTransactions);
 
-router.get('/ask/:joinId', verifyToken, verifyRole('advertiser'), ask);
+router.post('/ask/:joinId', verifyToken, verifyRole('advertiser'), ask);
 
 router.get('/mypage', verifyToken, verifyRole('advertiser'), readMypage);
 router.post('/mypage/profile', verifyToken, verifyRole('advertiser'), updateMypageProfile);

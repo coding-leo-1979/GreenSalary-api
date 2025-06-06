@@ -10,6 +10,7 @@ const cloudinary = require('cloudinary').v2;
 
 // 라우팅
 const authRoutes = require('./routes/auth.route');
+const adminRoutes = require('./routes/admin.route');
 const advertiserRoutes = require('./routes/advertiser.route');
 const influencerRoutes = require('./routes/influencer.route');
 
@@ -48,6 +49,7 @@ app.use(express.json());
 
 // 그룹 라우트 설정
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/advertiser', advertiserRoutes);
 app.use('/api/influencer', influencerRoutes);
 
