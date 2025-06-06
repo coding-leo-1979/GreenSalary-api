@@ -36,7 +36,8 @@ exports.createContract = async (req, res) => {
             site,
             media,
             description,
-            photo_url
+            photo_url,
+            smartContractId
         } = req.body;
 
         // 필수 항목 검증
@@ -63,7 +64,8 @@ exports.createContract = async (req, res) => {
                 media_image: media?.minImageCount || 0,
             },
             description: description || '',
-            photo_url
+            photo_url,
+            smartContractId
             // ⚠️ id, access_code는 Schema에서 자동 생성 및 중복 방지
         });
 
@@ -200,8 +202,8 @@ exports.readInfluencers = async (req, res) => {
     // 6. InfluencerContract.conditionTest
     // 7. InfluencerContract.review_status
     // 8. InfluencerContract.reward_paid
-    // 9. submit_review_available: review_available == true && InfluencerContract.review_status == APPROVED 때만 가능함
-    // 10. submit_reward_available: review_available == true && InfluencerContract.review_status != PENDING 때만 가능함
+    // 9. submit_review_available: review_available == true && InfluencerContract.review_status == APPROVED && InfluencerContract.reward_paid === false 때만 가능함
+    // 10. submit_reward_available: review_available == true && InfluencerContract.review_status != PENDING && InfluencerContract.reward_paid === false 때만 가능함
     try {
         const { contractId } = req.params;
 
@@ -233,8 +235,8 @@ exports.readInfluencers = async (req, res) => {
             if (!influencer) return null;
 
             const review_status = ic.review_status;
-            const submit_review_available = review_available && review_status === 'APPROVED';
-            const submit_reward_available = review_available && review_status !== 'PENDING';
+            const submit_review_available = review_available && review_status === 'APPROVED' && reward_paid === false;
+            const submit_reward_available = review_available && review_status !== 'PENDING' && reward_paid === false;
 
             return {
                 joinId: ic.influencerContractId,
@@ -283,6 +285,108 @@ exports.readInfluencers = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
+// 광고 인플루언서 입금하기
+// POST /api/advertiser/contract/:contractId/pay
+exports.payInfluencers = async (req, res) => {
+    /*
+    ### Request Body
+    {
+        "joinIds": [
+            "joinId1", // Number
+            "joinId2",
+            "joinId3",
+            "joinId4",
+            ///
+        ]
+    }
+
+    ### Backend
+    0. contractId == Contract.id 인 contract 찾기
+    1. 오늘이 Contract.upload_start_date 와 Contract.upload_end_date 기간에 포함되는지 확인하기
+    2. joinId == InfluencerContract.influencerContractId 인 ic 찾기
+    3. 해당 ic의 InfluencerContract.review_status가 APPROVED 또는 REJECTED인지 확인하기
+    4. 해당 ic의 InfluencerContract.reward_paid가 false인지 확인하기
+    5. 위 조건을 통과한 경우에만 입금하고(블록체인) InfluencerContract.reward_paid를 true로 바꾸기
+    6. 조건을 통과하지 못한 ic의 개수를 기억해뒀다가, 전체 몇 건 중 몇 건은 성공하고 몇 건을 실패했다고 전해주기
+    */
+    try {
+        const { contractId } = req.params;
+        const { joinIds } = req.body;
+
+        if (!contractId) {
+            return res.status(400).json({ message: '잘못된 요청입니다. contractId가 없습니다.' });
+        }
+        if (!Array.isArray(joinIds) || joinIds.length === 0) {
+            return res.status(400).json({ message: '잘못된 요청입니다. joinIds가 없습니다.' });
+        }
+
+        // Contract 찾기
+        const contract = await Contract.findOne({ id: contractId });
+        if (!contract) {
+            return res.status(404).json({ message: '계약을 찾을 수 없습니다.' });
+        }
+
+        // 오늘이 업로드 기간 내인지 확인하기
+        const now = new Date();
+        const depositDeadline = new Date(contract.upload_end_date);
+        depositDeadline.setDate(depositDeadline.getDate() + 1);
+        if (now < contract.upload_start_date || now > depositDeadline) {
+            return res.status(400).json({ message: '현재 시점은 입금 가능한 기간이 아닙니다.' });
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+        const failDetails = [];
+
+        for (const joinId of joinIds) {
+            const ic = await InfluencerContract.findOne({ influencerContractId: joinId, contract_id: contractId });
+            const influencer = await Influencer.findOne({ influencerId: ic.influencer_id });
+            const influencer_name = influencer.name;
+            if (!ic) {
+                failCount++;
+                failDetails.push({ influencer_name, reason: '인플루언서 계약을 찾을 수 없습니다.' });
+                continue;
+            }
+
+            if (!(ic.review_status === 'APPROVED' || ic.review_status === 'REJECTED')) {
+                failCount++;
+                failDetails.push({ influencer_name, reason: '보상을 지급할 수 있는 status가 아닙니다.' });
+                continue;
+            }
+
+            if (ic.reward_paid === true) {
+                failCount++;
+                failDetails.push({ influencer_name, reason: '이미 보상이 지급되었습니다.' });
+                continue;
+            }
+            /*
+            try {
+                await payToInfluencer(joinId);
+            } catch (blockchainErr) {
+                failCount++;
+                failDetails.push({ influencer_name, reason: '블록체인 입금이 실패했습니다.' });
+                continue;
+            }
+            */
+            ic.reward_paid = true;
+            ic.reward_paid_at = now;
+            await ic.save();
+            successCount++;
+        }
+
+        return res.status(200).json({
+            message: '입금 처리가 완료되었습니다.',
+            total: joinIds.length,
+            success: successCount,
+            failed: failCount,
+            failDetails
+        });
+    } catch (error) {
+        console.log('payInfluencers error: ', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };

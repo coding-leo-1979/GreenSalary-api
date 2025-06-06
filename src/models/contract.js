@@ -35,7 +35,8 @@ const contractSchema = new mongoose.Schema({
   },
   description: { type: String },
   photo_url: { type: String },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
+  smartContractId: { type: Number, required: true }
 });
 
 // 충돌 방지

@@ -112,7 +112,8 @@ exports.readContract = async (req, res) => {
             },
             description: contract.description,
             photo_url: contract.photo_url,
-            accessCode: contract.access_code
+            accessCode: contract.access_code,
+            smartContractId
         }
 
         return res.status(200).json(response);
@@ -166,10 +167,15 @@ exports.joinContract = async (req, res) => {
             influencer_id: influencerId,
             joined_at: now
         });
-
         await influencerContract.save();
-        return res.status(201).json({ message: '계약에 성공적으로 참여하였습니다.' });
 
+        // 6. Contract.participants += 1
+        await Contract.updateOne(
+            { id: contractId },
+            { $inc: { participants: 1 }}
+        );
+
+        return res.status(201).json({ message: '계약에 성공적으로 참여하였습니다.' });
     } catch (error) {
         console.log('example error: ', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
