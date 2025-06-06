@@ -113,7 +113,7 @@ exports.readContract = async (req, res) => {
             description: contract.description,
             photo_url: contract.photo_url,
             accessCode: contract.access_code,
-            smartContractId
+            smartContractId: contract.smartContractId
         }
 
         return res.status(200).json(response);
