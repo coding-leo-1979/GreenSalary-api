@@ -346,7 +346,7 @@ exports.payInfluencers = async (req, res) => {
         let failCount = 0;
         const failDetails = [];
 
-        for (const joinId of joinIds) {
+        for (const item of joinIds) {
             const { joinId, paidAt } = item;
 
             const ic = await InfluencerContract.findOne({ influencerContractId: joinId, contract_id: contractId });
