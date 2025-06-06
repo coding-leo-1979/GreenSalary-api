@@ -235,6 +235,7 @@ exports.readInfluencers = async (req, res) => {
             if (!influencer) return null;
 
             const review_status = ic.review_status;
+            const reward_paid = ic.reward_paid;
             const submit_review_available = review_available && review_status === 'APPROVED' && reward_paid === false;
             const submit_reward_available = review_available && review_status !== 'PENDING' && reward_paid === false;
 
