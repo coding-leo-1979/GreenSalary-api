@@ -402,39 +402,28 @@ exports.payInfluencers = async (req, res) => {
 // 광고 거래 내역 조회하기
 // GET /api/advertiser/contract/:contractId/transactions
 exports.readTransactions = async (req, res) => {
-    // 정렬: sort (latest, oldest) (default: latest)
-    // Transaction.contract_id == Contract.id 인 계약을 불러와야 함
-    // influencer_name: Transaction.influencer_id == Influencer.influencerId인 Influencer.name을 가져와야 함
-    // amount: Transaction.amount
-    // paid_at: Transaction.paid_at
-    // txHash: Transaction.txHash
     try {
         const { contractId } = req.params;
         const { sort = 'latest' } = req.query;
 
-        // Contract 유효성 검사
         const contract = await Contract.findOne({ id: contractId });
         if (!contract) {
-            return res.status(404).json({ message: '계약이 존재하지 않습니다. '});
+            return res.status(404).json({ message: '계약이 존재하지 않습니다.' });
         }
 
-        // Sort
         const sortOrder = sort === 'oldest' ? 1 : -1;
 
-        // Transaction 테이블에서 해당 Contract의 거래 내역 조회
-        const transations = await Transaction
-            .find({ contract_id: contractId })
-            .sort({ paid_at: sortOrder });
+        const transactions = await InfluencerContract
+            .find({ contract_id: contractId, reward_paid: true })
+            .sort({ reward_paid_at: sortOrder });
 
-        // 각 Transaction에서 Response 구성
         const response = await Promise.all(
-            transations.map(async (tx) => {
-                const influencer = await Influencer.findOne({ influencerId: tx.influencer_id });
+            transactions.map(async (tx) => {
+                const influencer = await Influencer.findOne({ influencer_id: tx.influencer_id });
                 return {
                     influencer_name: influencer?.name || 'Unknown',
-                    amount: tx.amount,
-                    paid_at: tx.paid_at,
-                    txHash: tx.txHash
+                    amount: contract.reward,
+                    paid_at: tx.reward_paid_at,
                 };
             })
         );

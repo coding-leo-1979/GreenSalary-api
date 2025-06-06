@@ -18,6 +18,7 @@ const influencerContractSchema = new mongoose.Schema({
     enum: ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_FROM_ADV', 'REVIEW_FROM_INF'],
     default: 'PENDING',
   },
+  
   reward_paid: { type: Boolean, default: false },
   reward_paid_at: { type: Date, default: null},
 });
