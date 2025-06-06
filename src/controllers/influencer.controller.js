@@ -1,5 +1,6 @@
 // src/controllers/influencer.controller.js
 
+const axios = require('axios');
 const bcrypt = require('bcrypt');
 const Contract = require('../models/contract');
 const Advertiser = require('../models/advertiser');
@@ -284,8 +285,81 @@ exports.readContracts = async (req, res) => {
 exports.inputURL = async (req, res) => {
     /*
     InfluencerContract
+    ### Request Body
+    {
+        "url": "https://example.com/post/123"
+    }
+
+    ### Backend
+    1. contractId == Contract.id인 Contract 찾기
+    2. Contract.site에 따라서 URL 형식 대조하기.
+        - 'Naver Blog'이라면, URL은 'https://blog.naver.com/'로 시작해야 함.
+    3. 유효하고 접근 가능한 URL인지 확인하기
+    4. InfluencerContract.contract_id == contractId && InfluencerContract.influencer_id == req.user.userId인 InfluencerContract 찾기
+    5. InfluencerContract.url에 입력받은 url을 저장하기
+
+    ### Response
+    {
+        "message": "URL이 성공적으로 제출되었습니다. AI 검토하는 데 시간이 소요됩니다."
+    }
+    
     */
     try {
+        const { contractId } = req.params;
+        const { url } = req.body;
+        const influencer_id = req.user.userId;
+
+        if (!url) {
+            return res.status(400).json({ message: 'URL은 필수 입력값입니다.' });
+        }
+
+        const contract = await Contract.findOne({ id: contractId });
+        if (!contract) {
+            return res.status(404).json({ message: '해당 광고 계약을 찾을 수 없습니다.' });
+        }
+
+        // URL 업로드 기간인지 확인하기: Contract.upload_start_date ~ Contract.upload_end_date
+        const now = new Date();
+        const uploadStart = new Date(contract.upload_start_date);
+        const uploadEnd = new Date(contract.upload_end_date);
+
+        if (now < uploadStart || now > uploadEnd) {
+            return res.status(400).json({
+                message: `URL은 ${uploadStart.toISOString().slice(0, 10)}부터 ${uploadEnd.toISOString().slice(0, 10)} 사이에만 제출할 수 있습니다.`,
+            });
+        }
+
+        // Contract.site에 따라 URL 형식 검사
+        if (contract.site === 'Naver Blog') {
+            if (!url.startsWith('https://blog.naver.com/')) {
+                return res.status(400).json({ message: '네이버 블로그 URL 형식이 아닙니다.' });
+            }
+        }
+
+        try {
+            const response = await axios.get(url);
+            if (response.status >= 400) {
+                return res.status(400).json({ message: '접근할 수 없는 URL입니다.' });
+            }
+        } catch (err) {
+            return res.status(400).json({ message: 'URL에 접근할 수 없습니다.' });
+        }
+
+        const influencerContract = await InfluencerContract.findOne({
+            contract_id: contractId,
+            influencer_id: influencer_id,
+        });
+
+        if (!influencerContract) {
+            return res.status(404).json({ message: '계약 정보가 존재하지 않습니다.' });
+        }
+
+        influencerContract.url = url;
+        await influencerContract.save();
+
+        return res.status(200).json({
+            message: 'URL이 성공적으로 제출되었습니다. AI 검토하는 데 시간이 소요됩니다.',
+        });
 
     } catch (error) {
         console.log('example error: ', error);
@@ -296,10 +370,24 @@ exports.inputURL = async (req, res) => {
 // URL 조회하기
 // GET /api/influencer/contract/:contractId/url
 exports.readURL = async (req, res) => {
-    /*
-    
-    */
     try {
+        const { contractId } = req.params;
+        const influencer_id = req.user.userId;
+
+        const influencerContract = await InfluencerContract.findOne({
+            contract_id: contractId,
+            influencer_id: influencer_id,
+        });
+
+        if (!influencerContract) {
+            return res.status(404).json({ message: '계약 정보가 존재하지 않습니다.' });
+        }
+
+        return res.status(200).json({
+            url: influencerContract.url,
+            review_status: influencerContract.review_status,
+            reward_paid: influencerContract.reward_paid
+        })
 
     } catch (error) {
         console.log('example error: ', error);
