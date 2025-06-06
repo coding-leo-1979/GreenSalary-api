@@ -216,6 +216,7 @@ exports.readInfluencers = async (req, res) => {
         if (!contract) {
             return res.status(404).json({ message: '광고 계약이 존재하지 않습니다.' });
         }
+        const smartContractId = contract.smartContractId;
 
         // 리뷰 신청 가능 여부 계산
         const today = new Date();
@@ -282,6 +283,7 @@ exports.readInfluencers = async (req, res) => {
 
     res.json({
       review_available,
+      smartContractId,
       influencers: filteredInfluencers
     });
 
