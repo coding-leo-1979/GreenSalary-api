@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const Contract = require('../models/contract');
 const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
-const Transaction = require('../models/transaction');
 const InfluencerContract = require('../models/influencer_contract');
 
 // 상태 계산 함수

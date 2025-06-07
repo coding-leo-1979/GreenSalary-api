@@ -3,9 +3,12 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken, verifyRole } = require('../middlewares/auth.middleware');
-const {  } = require('../controllers/admin.controller');
+const { readAsks, readAsk, approveAsk, rejectAsk } = require('../controllers/admin.controller');
 
-// router.post('/contract/code', verifyToken, verifyRole('admin'), inputCode);
-// router.get('/contract/:contractId', verifyToken, verifyRole('admin'), readContract);
+router.get('/ask', verifyToken, verifyRole('admin'), readAsks);
+router.get('/ask/:askId', verifyToken, verifyRole('admin'), readAsk);
+
+router.post('/ask/:askId/approve', verifyToken, verifyRole('admin'), approveAsk);
+router.post('/ask/:askId/reject', verifyToken, verifyRole('admin'), rejectAsk);
 
 module.exports = router;
