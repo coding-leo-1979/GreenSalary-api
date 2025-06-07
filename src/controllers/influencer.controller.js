@@ -400,6 +400,70 @@ exports.readURL = async (req, res) => {
     }
 };
 
+// 광고 결과 문의하기
+// POST /api/influencer/ask/:joinId
+exports.ask = async (req, res) => {
+    /*
+    1. submit_review_available인지 확인하기
+    2. review_status를 REVIEW_FROM_INF로 바꾸기
+
+    */
+    try {
+        const { joinId } = req.params;
+
+        // 해당 인플루언서 계약 조회
+        const influencerContract = await InfluencerContract.findOne({ influencerContractId: joinId });
+        if (!influencerContract) {
+            return res.status(404).json({ message: '해당 인플루언서 계약 정보를 찾을 수 없습니다.' });
+        }
+
+        // 해당 계약 정보 조회
+        const contract = await Contract.findOne({ id: influencerContract.contract_id });
+        if (!contract) {
+            return res.status(404).json({ message: '광고 계약이 존재하지 않습니다.' });
+        }
+
+        // KST 기준 현재 시각
+        const today = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+
+        // 기간 계산
+        const uploadStart = new Date(contract.upload_start_date);
+        const uploadEnd = new Date(contract.upload_end_date);
+        const reviewDeadline = new Date(uploadEnd);
+        reviewDeadline.setDate(reviewDeadline.getDate() + 1);
+
+        const review_available = today >= uploadStart && today <= reviewDeadline;
+
+        // 상태 조건
+        const isRejected = influencerContract.review_status === 'REJECTED';
+        const isRewardUnpaid = influencerContract.reward_paid === false;
+
+        if (!review_available) {
+            return res.status(400).json({
+                message: `리뷰 요청이 불가능한 기간입니다. (가능 기간: ${uploadStart.toISOString().slice(0, 10)} ~ ${reviewDeadline.toISOString().slice(0, 10)})`,
+            });
+        }
+
+        if (!isRejected || !isRewardUnpaid) {
+            return res.status(400).json({
+                message: '리뷰 요청이 불가능한 상태입니다. (조건: 리뷰가 REJECTED 상태이고, 보상이 아직 지급되지 않았어야 합니다.)',
+            });
+        }
+
+        // 상태 변경
+        influencerContract.review_status = 'REVIEW_FROM_INF';
+        await influencerContract.save();
+
+        return res.status(200).json({
+            message: '리뷰 요청이 성공적으로 처리되었습니다.',
+            new_status: influencerContract.review_status,
+        });
+    } catch (error) {
+        console.log('ask error: ', error);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+};
+
 // 마이페이지
 // GET /api/influencer/mypage
 exports.readMypage = async (req, res) => {

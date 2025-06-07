@@ -145,7 +145,6 @@ exports.approveAsk = async (req, res) => {
     }
 };
 
-
 // 문의 REJECT 하기
 // POST /api/auth/ask/:askId/reject
 exports.rejectAsk = async (req, res) => {
