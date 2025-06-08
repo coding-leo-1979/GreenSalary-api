@@ -21,6 +21,7 @@ const influencerContractSchema = new mongoose.Schema({
   
   reward_paid: { type: Boolean, default: false },
   reward_paid_at: { type: Date, default: null},
+  payment_tx_hash: {type: String }
 });
 
 // Auto-increment 설정

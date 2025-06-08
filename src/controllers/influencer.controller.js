@@ -391,7 +391,8 @@ exports.readURL = async (req, res) => {
         return res.status(200).json({
             url: influencerContract.url,
             review_status: influencerContract.review_status,
-            reward_paid: influencerContract.reward_paid
+            reward_paid: influencerContract.reward_paid,
+            joinId: influencerContract.influencerContractId
         })
 
     } catch (error) {

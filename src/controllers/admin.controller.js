@@ -6,8 +6,16 @@ const Influencer = require('../models/influencer');
 const InfluencerContract = require('../models/influencer_contract');
 const influencer_contract = require('../models/influencer_contract');
 
+// 한국 시간
+function nowKST() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const koreaTimeDiff = 9 * 60 * 60 * 1000;
+    return new Date(utc + koreaTimeDiff);
+}
+
 // 문의 목록 조회하기
-// GET /api/auth/ask?sort=latest&asker=all
+// GET /api/admin/ask?sort=latest&asker=all
 exports.readAsks = async (req, res) => {
     try {
         const { sort = 'latest', asker = 'all' } = req.query;
@@ -73,7 +81,7 @@ exports.readAsks = async (req, res) => {
 };
 
 // 문의 내용 조회하기
-// GET /api/auth/ask/:askId
+// GET /api/admin/ask/:askId
 exports.readAsk = async (req, res) => {
     try {
         const { askId } = req.params;
@@ -125,7 +133,7 @@ exports.readAsk = async (req, res) => {
 };
 
 // 문의 APPROVE 하기
-// POST /api/auth/ask/:askId/approve
+// POST /api/admin/ask/:askId/approve
 exports.approveAsk = async (req, res) => {
     try {
         const { askId } = req.params;
@@ -146,7 +154,7 @@ exports.approveAsk = async (req, res) => {
 };
 
 // 문의 REJECT 하기
-// POST /api/auth/ask/:askId/reject
+// POST /api/admin/ask/:askId/reject
 exports.rejectAsk = async (req, res) => {
     try {
         const { askId } = req.params;
