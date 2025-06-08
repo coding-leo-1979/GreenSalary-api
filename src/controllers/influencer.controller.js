@@ -344,10 +344,10 @@ exports.inputURL = async (req, res) => {
         try {
             const response = await axios.get(url);
             if (response.status >= 400) {
-                return res.status(400).json({ message: '접근할 수 없는 URL입니다.' });
+                return res.status(400).json({ message: '유효하지 않은 URL입니다.' });
             }
         } catch (err) {
-            return res.status(400).json({ message: 'URL에 접근할 수 없습니다.' });
+            return res.status(400).json({ message: '유효하지 않은 URL입니다.' });
         }
 
         const influencerContract = await InfluencerContract.findOne({
