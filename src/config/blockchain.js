@@ -26,7 +26,7 @@ class BlockchainConfig {
     // 컨트랙트 정보 로드
     loadContractInfo() {
         try {
-            const contractPath = path.join(this.blockchainPath, 'build/contracts/AdContract.json');
+            const contractPath = path.join(__dirname, 'AdContract.json');
             
             if (!fs.existsSync(contractPath)) {
                 console.error('❌ AdContract.json not found at:', contractPath);
