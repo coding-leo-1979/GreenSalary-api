@@ -249,6 +249,7 @@ exports.readInfluencers = async (req, res) => {
                 url: ic.url,
                 keywordTest: ic.keywordTest,
                 conditionTest: ic.conditionTest,
+                pdf_url: ic.pdf_url,
 
                 review_status,
                 reward_paid: ic.reward_paid,

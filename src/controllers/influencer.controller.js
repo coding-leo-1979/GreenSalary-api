@@ -467,7 +467,8 @@ exports.readURL = async (req, res) => {
             url: influencerContract.url,
             review_status: influencerContract.review_status,
             reward_paid: influencerContract.reward_paid,
-            joinId: influencerContract.influencerContractId
+            joinId: influencerContract.influencerContractId,
+            pdf_url: influencerContract.pdf_url
         })
 
     } catch (error) {
