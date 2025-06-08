@@ -87,7 +87,8 @@ async function startServer() {
       paymentScheduler.startDailySchedule(); // 운영 환경: 매일 오전 9시
     } else {
       console.log('🧪 Development mode: Using test schedule');
-      // paymentScheduler.startTestSchedule(); // 필요 시 주석 해제
+      paymentScheduler.startDailySchedule();
+      paymentScheduler.startQuickTest(); // 필요 시 주석 해제
     }
 
     const PORT = process.env.PORT || 5000;

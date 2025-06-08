@@ -7,6 +7,70 @@ const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
 const InfluencerContract = require('../models/influencer_contract');
 
+// 한국 시간
+function nowKST() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const koreaTimeDiff = 9 * 60 * 60 * 1000;
+    return new Date(utc + koreaTimeDiff);
+}
+
+async function URLanalysis(contract_title, influencer_name, site_url, image_url, keywords, conditions, media_text, media_image, influencerContract) {
+    try {
+        const aiAnalysisData = {
+            contract_title,
+            influencer_name,
+            site_url,
+            image_url: image_url || "",
+            keywords,
+            conditions,
+            media_text: media_text || 0,
+            media_image: media_image || 0
+        };
+
+        console.log('🤖 Sending data to AI Analysis API:', aiAnalysisData);
+
+        const aiResponse = await axios.post(process.env.AI_ANALYZE_API, aiAnalysisData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 300000 // 5분 타임아웃
+        });
+
+        if (aiResponse.data) {
+            const { keywordTest, conditionTest, wordCountTest, imageCountTest, pdf_url } = aiResponse.data;
+            
+            // InfluencerContract 업데이트
+            if (influencerContract) {
+                influencerContract.keywordTest = keywordTest;
+                influencerContract.conditionTest = conditionTest;
+                influencerContract.wordCountTest = wordCountTest;
+                influencerContract.imageCountTest = imageCountTest;
+                
+                if (pdf_url) {
+                    const baseUrl = process.env.AI_ANALYZE_API.replace(/\/+$/, '');
+                    influencerContract.pdf_url = `${baseUrl}${pdf_url}`;
+                }
+
+                await influencerContract.save();
+            }
+
+            console.log('✅ AI Analysis completed successfully' );
+            return { success: true, data: aiResponse.data };
+        }
+    } catch (error) {
+        console.error('❌ AI Analysis Error: ', error);
+
+        // AI 분석 실패 시 상태 업데이트 (선택사항)
+        if (influencerContract) {
+            influencerContract.analysis_status = 'failed';
+            await influencerContract.save();
+        }
+        
+        return { success: false };
+    }
+}
+
 // 
 // POST GET 
 exports.example = async (req, res) => {
@@ -288,27 +352,6 @@ exports.readContracts = async (req, res) => {
 // URL 입력하기
 // POST /api/influencer/contract/:contractId/url
 exports.inputURL = async (req, res) => {
-    /*
-    InfluencerContract
-    ### Request Body
-    {
-        "url": "https://example.com/post/123"
-    }
-
-    ### Backend
-    1. contractId == Contract.id인 Contract 찾기
-    2. Contract.site에 따라서 URL 형식 대조하기.
-        - 'Naver Blog'이라면, URL은 'https://blog.naver.com/'로 시작해야 함.
-    3. 유효하고 접근 가능한 URL인지 확인하기
-    4. InfluencerContract.contract_id == contractId && InfluencerContract.influencer_id == req.user.userId인 InfluencerContract 찾기
-    5. InfluencerContract.url에 입력받은 url을 저장하기
-
-    ### Response
-    {
-        "message": "URL이 성공적으로 제출되었습니다. AI 검토하는 데 시간이 소요됩니다."
-    }
-    
-    */
     try {
         const { contractId } = req.params;
         const { url } = req.body;
@@ -324,7 +367,7 @@ exports.inputURL = async (req, res) => {
         }
 
         // URL 업로드 기간인지 확인하기: Contract.upload_start_date ~ Contract.upload_end_date
-        const now = new Date();
+        const now = nowKST();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
 
@@ -341,6 +384,7 @@ exports.inputURL = async (req, res) => {
             }
         }
 
+        // URL 유효성 검사
         try {
             const response = await axios.get(url);
             if (response.status >= 400) {
@@ -359,13 +403,40 @@ exports.inputURL = async (req, res) => {
             return res.status(404).json({ message: '계약 정보가 존재하지 않습니다.' });
         }
 
+        // URL 저장
         influencerContract.url = url;
         await influencerContract.save();
 
-        return res.status(200).json({
-            message: 'URL이 성공적으로 제출되었습니다. AI 검토하는 데 시간이 소요됩니다.',
+        res.status(200).json({
+            message: 'URL이 성공적으로 제출되었습니다. AI 분석이 진행 중입니다.',
         });
 
+        setImmediate(async () => {
+            try {
+                const analysisResult = await URLanalysis(
+                    contract.title, 
+                    req.user.userName, 
+                    influencerContract.url, 
+                    contract.photo_url, 
+                    contract.keywords, 
+                    contract.conditions, 
+                    contract.media?.[0]?.media_text || 0, 
+                    contract.media?.[0]?.media_image || 0, 
+                    influencerContract
+                );
+
+                if (analysisResult.success) {
+                    influencerContract.analysis_status = 'completed';
+                } else {
+                    influencerContract.analysis_status = 'failed';
+                }
+                await influencerContract.save();
+            } catch (analysisError) {
+                console.error('Background analysis error:', analysisError);
+                influencerContract.analysis_status = 'failed';
+                await influencerContract.save();
+            }
+        });
     } catch (error) {
         console.log('example error: ', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
