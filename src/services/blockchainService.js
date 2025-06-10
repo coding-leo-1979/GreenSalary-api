@@ -84,6 +84,35 @@ class BlockchainService {
         }
     }
 
+    // 광고주에게 잔액 환불
+    async refundAdvertiser(smartContractId, advertiserWalletAddress) {
+        try {
+            const adminAccount = await blockchainConfig.getAdminAccount();
+            
+            console.log(`💰 Refunding advertiser... (smartContractId: ${smartContractId})`);
+
+            const result = await this.contract.methods
+                .refundAdvertiser(smartContractId, advertiserWalletAddress)
+                .send({
+                    from: adminAccount,
+                    gas: 300000
+                })
+
+            console.log(`✅ Refund successful: ${result.transactionHash}`);
+            
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                blockNumber: result.blockNumber,
+                gasUsed: result.gasUsed
+            };
+
+        } catch (error) {
+            console.error('❌ Refund failed:', error);
+            throw error;
+        }
+    }
+
 
     // 연결 상태 확인
     async getStatus() {

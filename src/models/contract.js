@@ -37,7 +37,12 @@ const contractSchema = new mongoose.Schema({
   photo_url: { type: String },
   created_at: { type: Date, default: Date.now },
   smartContractId: { type: Number, required: true },
-  smartContractAddress: { type: String }
+  smartContractAddress: { type: String },
+
+  // 환불 관련 필드
+  refund_processed: { type: Boolean, default: false },
+  refund_processed_at: { type: Date, default: null },
+  refund_tx_hash: { type: String, default: null }
 });
 
 // 충돌 방지
