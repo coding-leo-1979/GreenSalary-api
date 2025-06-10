@@ -3,29 +3,69 @@
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 class BlockchainConfig {
     constructor() {
-        // 가나슈 연결
-        this.web3 = new Web3('http://localhost:8545');
-        
-        // 블록체인 프로젝트 경로
-        this.blockchainPath = path.join(__dirname, '../../../GreenSalaryBlockchain/BlockChain');
-        
+        // 현재 실행 환경 설정 (NODE_ENV에 따라 분기)
+        this.currentEnv = process.env.NODE_ENV || 'development'; // 기본값은 development
+        console.log(`🚀 Current Blockchain Environment: ${this.currentEnv.toUpperCase()}`);
+
+        let rpcUrl;
+        let networkId;
+        let privateKey; // 백엔드에서 트랜잭션을 서명할 때 사용할 개인 키
+
+        // 환경에 따라 RPC URL, Network ID, Private Key 설정
+        if (this.currentEnv === 'development') {
+            rpcUrl = process.env.GANACHE_RPC_URL || 'http://localhost:8545';
+            networkId = process.env.GANACHE_NETWORK_ID || '5777';
+            privateKey = process.env.GANACHE_ACCOUNT_PRIVATE_KEY;
+            console.log(`✅ Connecting to Ganache at: ${rpcUrl}`);
+        } else if (this.currentEnv === 'sepolia') {
+            rpcUrl = process.env.SEPOLIA_RPC_URL;
+            networkId = process.env.SEPOLIA_NETWORK_ID;
+            privateKey = process.env.SEPOLIA_ACCOUNT_PRIVATE_KEY;
+
+            if (!rpcUrl || !networkId || !privateKey) {
+                throw new Error('❌ Sepolia environment variables (RPC_URL, NETWORK_ID, PRIVATE_KEY) are not set.');
+            }
+            console.log(`✅ Connecting to Sepolia Testnet at: ${rpcUrl.split('/v3/')[0]}/v3/XXXX...`); // 보안을 위해 URL 노출 제한
+        } 
+        // else if (this.currentEnv === 'mainnet') { ... } // 필요시 메인넷 설정 추가
+        else {
+            throw new Error(`❌ Invalid NODE_ENV: ${this.currentEnv}. Must be 'development' or 'sepolia'.`);
+        }
+
+        // Web3 인스턴스 초기화
+        this.web3 = new Web3(new Web3.providers.HttpProvider(rpcUrl));
+        this.privateKey = privateKey; // 백엔드에서 사용할 개인 키 저장
+        this.networkId = networkId; // 현재 네트워크 ID 저장
+
         // 컨트랙트 정보 로드
         this.contractInfo = this.loadContractInfo();
-        
+
         if (!this.contractInfo) {
-            throw new Error('Cannot load deployed contract information');
+            throw new Error('Cannot load deployed contract information. Ensure AdContract.json exists.');
+        }
+
+        // 로드된 컨트랙트 정보와 현재 환경의 네트워크 ID가 일치하는지 확인
+        // 백엔드는 특정 네트워크에 배포된 컨트랙트와만 상호작용해야 하므로 중요.
+        if (this.contractInfo.networkId !== this.networkId.toString()) {
+            console.warn(`⚠️ Warning: Contract deployed on network ID ${this.contractInfo.networkId}, but current environment is set to network ID ${this.networkId}. This might cause issues.`);
+            // 이 경고가 뜨면 `NODE_ENV` 설정과 `truffle migrate` 시 사용한 네트워크를 확인해야 합니다.
+            // 예를 들어, 로컬에서 development로 돌리는데 contractInfo가 sepolia로 로드되었다면 문제 발생 가능성.
         }
 
         console.log(`✅ Connected to AdContract at: ${this.contractInfo.address}`);
-        console.log(`✅ Network: http://localhost:8545`);
+        console.log(`✅ Network ID: ${this.networkId}`);
     }
 
-    // 컨트랙트 정보 로드
+    // 컨트랙트 정보 로드 (AdContract.json)
+    // 환경에 맞는 네트워크 ID의 컨트랙트 주소를 로드하도록 수정
     loadContractInfo() {
         try {
+            // truffle compile 시 생성되는 build/contracts 폴더의 JSON 파일을 직접 참조
+            // 현재 blockchain.js의 위치에 따라 경로 조정 필요
             const contractPath = path.join(__dirname, 'AdContract.json');
             
             if (!fs.existsSync(contractPath)) {
@@ -35,24 +75,19 @@ class BlockchainConfig {
 
             const contractData = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
             
-            // 배포된 네트워크 찾기
-            const networks = contractData.networks;
-            const networkIds = Object.keys(networks);
-            
-            if (networkIds.length === 0) {
-                console.error('❌ No deployed contract found');
+            // 현재 설정된 networkId에 맞는 배포 정보 찾기
+            const deployedContract = contractData.networks[this.networkId];
+
+            if (!deployedContract || !deployedContract.address) {
+                console.error(`❌ No deployed contract found for network ID: ${this.networkId}.`);
                 return null;
             }
-
-            // 가장 최근 배포된 네트워크 사용
-            const latestNetworkId = networkIds[networkIds.length - 1];
-            const deployedContract = networks[latestNetworkId];
 
             return {
                 name: contractData.contractName,
                 abi: contractData.abi,
                 address: deployedContract.address,
-                networkId: latestNetworkId
+                networkId: this.networkId.toString() // 현재 설정된 네트워크 ID 사용
             };
             
         } catch (error) {
@@ -61,27 +96,45 @@ class BlockchainConfig {
         }
     }
 
-    // 컨트랙트 인스턴스 생성
+    // 컨트랙트 인스턴스 생성 (백엔드에서 트랜잭션 서명용)
     getContract() {
         if (!this.contractInfo) {
             throw new Error('Contract not loaded');
         }
         
-        return new this.web3.eth.Contract(
+        const contract = new this.web3.eth.Contract(
             this.contractInfo.abi,
             this.contractInfo.address
         );
+
+        // 백엔드에서 직접 트랜잭션을 보낼 경우, 계정 추가 및 서명 설정
+        if (this.privateKey) {
+            // 계정을 web3 인스턴스에 추가
+            const account = this.web3.eth.accounts.privateKeyToAccount(this.privateKey);
+            this.web3.eth.accounts.wallet.add(account);
+            // 기본 트랜잭션 발신자 주소 설정 (from)
+            contract.options.from = account.address;
+            console.log(`✅ Admin account set for transactions: ${account.address}`);
+        } else {
+            console.warn('⚠️ Warning: No private key configured. Contract will be read-only from backend.');
+        }
+
+        return contract;
     }
 
-    // 계정 목록 가져오기
+    // 계정 목록 가져오기 (주로 개발/테스트 환경에서만 유용)
     async getAccounts() {
         return await this.web3.eth.getAccounts();
     }
 
-    // 관리자 계정 설정
+    // 관리자 계정 설정 (이제 this.privateKey를 통해 설정되므로 이 함수는 보조적)
     async getAdminAccount() {
-        const accounts = await this.getAccounts();
-        return accounts[0]; // 첫 번째 계정을 관리자로 사용
+        if (this.privateKey) {
+            const account = this.web3.eth.accounts.privateKeyToAccount(this.privateKey);
+            return account.address;
+        }
+        const accounts = await this.getAccounts(); // 개인 키가 없는 경우 첫 번째 계정 반환
+        return accounts[0];
     }
 
     // Wei ↔ Ether 변환
@@ -96,17 +149,20 @@ class BlockchainConfig {
     // 연결 테스트
     async testConnection() {
         try {
-            const isConnected = await this.web3.eth.net.isListening();
-            const networkId = await this.web3.eth.net.getId();
+            const isListening = await this.web3.eth.net.isListening();
+            const currentNetworkId = await this.web3.eth.net.getId();
             const blockNumber = await this.web3.eth.getBlockNumber();
             
             return {
-                connected: isConnected,
-                networkId: networkId,
+                connected: isListening,
+                configuredNetworkId: this.networkId,
+                actualNetworkId: currentNetworkId,
                 latestBlock: blockNumber,
-                contractAddress: this.contractInfo?.address
+                contractAddress: this.contractInfo?.address,
+                adminAccount: await this.getAdminAccount()
             };
         } catch (error) {
+            console.error('❌ Blockchain connection test failed:', error.message);
             return {
                 connected: false,
                 error: error.message

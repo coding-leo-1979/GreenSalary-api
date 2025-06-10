@@ -126,7 +126,7 @@ exports.inputCode = async (req, res) => {
         }
 
         // 4. 업로드 마감일 확인하기
-        const now = new Date();
+        const now = nowKST();
         if (contract.upload_end_date < now) {
             return res.status(400).json({ message: '이미 종료된 계약입니다.' });
         }
@@ -222,7 +222,7 @@ exports.joinContract = async (req, res) => {
         }
 
         // 4. 업로드 마감일 확인하기
-        const now = new Date();
+        const now = nowKST();
         if (contract.upload_end_date < now) {
             return res.status(400).json({ message: '이미 종료된 계약입니다.' });
         }
@@ -293,7 +293,7 @@ exports.readContracts = async (req, res) => {
 
             const uploadStartDate = new Date(contract.upload_start_date);
             const uploadEndDate = new Date(contract.upload_end_date);
-            const now = new Date();
+            const now = nowKST();
 
             const reviewAvailable = (
                 now >= uploadStartDate &&
@@ -323,7 +323,7 @@ exports.readContracts = async (req, res) => {
         }
 
         // 정렬
-        const today = new Date();
+        const today = nowKST();
         today.setHours(0, 0, 0, 0);
 
         if (sort === 'deadline') {

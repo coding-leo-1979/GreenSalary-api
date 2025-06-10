@@ -6,6 +6,14 @@ const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
 const InfluencerContract = require('../models/influencer_contract');
 
+// 한국 시간
+function nowKST() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const koreaTimeDiff = 9 * 60 * 60 * 1000;
+    return new Date(utc + koreaTimeDiff);
+}
+
 // 상태 계산 함수
 function getStatus(contract, now) {
     if (contract.upload_start_date > now) {
@@ -102,7 +110,7 @@ exports.readContracts = async (req, res) => {
 
         // 상태별 필터링
         let statusFilter = {};
-        const now = new Date();
+        const now = nowKST();
         if (status === 'pending') {
             statusFilter = { upload_start_date: { $gt: now }};
         } else if (status === 'active') {
@@ -218,7 +226,7 @@ exports.readInfluencers = async (req, res) => {
         const smartContractId = contract.smartContractId;
 
         // 리뷰 신청 가능 여부 계산
-        const today = new Date();
+        const today = nowKST();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
         const reviewDeadline = new Date(uploadEnd);
@@ -335,7 +343,7 @@ exports.payInfluencers = async (req, res) => {
         }
 
         // 오늘이 업로드 기간 내인지 확인하기
-        const now = new Date();
+        const now = nowKST();
         const depositDeadline = new Date(contract.upload_end_date);
         depositDeadline.setDate(depositDeadline.getDate() + 1);
         if (now < contract.upload_start_date || now > depositDeadline) {
@@ -371,15 +379,7 @@ exports.payInfluencers = async (req, res) => {
                 failDetails.push({ influencer_name, reason: '이미 보상이 지급되었습니다.' });
                 continue;
             }
-            /*
-            try {
-                await payToInfluencer(joinId);
-            } catch (blockchainErr) {
-                failCount++;
-                failDetails.push({ influencer_name, reason: '블록체인 입금이 실패했습니다.' });
-                continue;
-            }
-            */
+            
             ic.reward_paid = true;
             ic.reward_paid_at = new Date(paidAt);
             await ic.save();
@@ -459,7 +459,7 @@ exports.ask = async (req, res) => {
         }
 
         // 리뷰 가능 기간 계산
-        const today = new Date();
+        const today = nowKST();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
         const reviewDeadline = new Date(uploadEnd);

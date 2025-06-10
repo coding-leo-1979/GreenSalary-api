@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@truffle/hdwallet-provider": "^2.1.15",
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -23,7 +24,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nanoid": "^5.1.5",
     "node-cron": "^4.1.0",
-    "web3": "^1.10.0"
+    "web3": "^1.10.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
