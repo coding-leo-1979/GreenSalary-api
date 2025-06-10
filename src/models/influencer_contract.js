@@ -13,6 +13,7 @@ const influencerContractSchema = new mongoose.Schema({
   keywordTest: { type: Boolean, default: false },
   conditionTest: { type: Boolean, default: false },
   pdf_url: { type: String, default: null },
+  pdf_images_url: { type: [String] },
   
   review_status: {
     type: String,
