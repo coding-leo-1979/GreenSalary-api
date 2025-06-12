@@ -247,7 +247,7 @@ exports.readContracts = async (req, res) => {
     /*
     ### Request Parameter
     sort: deadline, latest (default: deadline) (deadline: Contract.upload_end_date 마감임박순) (latest: Contract.upload_start_date 최신순)
-    status: PENDING, APPROVED, REJECTED, ALL (default: ALL)
+    status: PENDING, APPROVED, REJECTED, PAID, ALL (default: ALL)
 
     ### Response
     {
@@ -311,7 +311,11 @@ exports.readContracts = async (req, res) => {
         // 상태 필터링
         let filtered = result;
         if (status !== 'ALL') {
-            filtered = result.filter(item => item.status === status);
+            if (status === 'PAID') {
+                filtered = result.filter(item => item.reward_paid === true);
+            } else {
+                filtered = result.filter(item => item.review_status === status);
+            }
         }
 
         // 정렬
