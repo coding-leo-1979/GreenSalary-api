@@ -452,7 +452,7 @@ exports.readTransactions = async (req, res) => {
             })
         );
 
-        return res.status(200).json(...headerResponse, ...response);
+        return res.status(200).json([...headerResponse, ...response]);
     } catch (error) {
         console.error('readPayments error:', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });

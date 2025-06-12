@@ -25,8 +25,11 @@ class PaymentService {
             console.log(`⏰ [PaymentService] Starting automatic payment and refund process (KST: ${nowKST().toISOString()})...`);
 
             // 1. 지급 대상 계약 가져오기 (upload_end_date로부터 2일 지난 계약들)
-            const now = nowKST();
-            const twoDaysAgo = new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000));
+            const today = nowKST();
+            today.setHours(0, 0, 0, 0);
+
+            const twoDaysAgo = nowKST();
+            twoDaysAgo.setDate(today.getDate() - 2);
 
             const expiredContracts = await Contract.find({
                 upload_end_date: { $lt: twoDaysAgo },
