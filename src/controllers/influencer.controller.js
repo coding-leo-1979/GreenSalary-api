@@ -7,14 +7,6 @@ const Advertiser = require('../models/advertiser');
 const Influencer = require('../models/influencer');
 const InfluencerContract = require('../models/influencer_contract');
 
-// 한국 시간
-function nowKST() {
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const koreaTimeDiff = 9 * 60 * 60 * 1000;
-    return new Date(utc + koreaTimeDiff);
-}
-
 async function URLanalysis(contract_title, influencer_name, site_url, image_url, keywords, conditions, media_text, media_image, influencerContract) {
     try {
         const aiAnalysisData = {
@@ -126,7 +118,7 @@ exports.inputCode = async (req, res) => {
         }
 
         // 4. 업로드 마감일 확인하기
-        const now = nowKST();
+        const now = new Date();
         if (contract.upload_end_date < now) {
             return res.status(400).json({ message: '이미 종료된 계약입니다.' });
         }
@@ -222,7 +214,7 @@ exports.joinContract = async (req, res) => {
         }
 
         // 4. 업로드 마감일 확인하기
-        const now = nowKST();
+        const now = new Date();
         if (contract.upload_end_date < now) {
             return res.status(400).json({ message: '이미 종료된 계약입니다.' });
         }
@@ -293,7 +285,7 @@ exports.readContracts = async (req, res) => {
 
             const uploadStartDate = new Date(contract.upload_start_date);
             const uploadEndDate = new Date(contract.upload_end_date);
-            const now = nowKST();
+            const now = new Date();
 
             const reviewAvailable = (
                 now >= uploadStartDate &&
@@ -323,7 +315,7 @@ exports.readContracts = async (req, res) => {
         }
 
         // 정렬
-        const today = nowKST();
+        const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         if (sort === 'deadline') {
@@ -371,7 +363,7 @@ exports.inputURL = async (req, res) => {
         }
 
         // URL 업로드 기간인지 확인하기: Contract.upload_start_date ~ Contract.upload_end_date
-        const now = nowKST();
+        const now = new Date();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
 

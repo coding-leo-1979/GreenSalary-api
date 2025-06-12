@@ -25,14 +25,11 @@ class PaymentService {
             console.log(`⏰ [PaymentService] Starting automatic payment and refund process (KST: ${nowKST().toISOString()})...`);
 
             // 1. 지급 대상 계약 가져오기 (upload_end_date로부터 2일 지난 계약들)
-            const today = nowKST();
-            today.setHours(0, 0, 0, 0);
-
-            const twoDaysAgo = nowKST();
-            twoDaysAgo.setDate(today.getDate() - 2);
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
             const expiredContracts = await Contract.find({
-                upload_end_date: { $lt: twoDaysAgo },
+                upload_end_date: { $lt: twentyFourHoursAgo },
                 refund_processed: { $ne: true } // 이미 환불 처리된 계약은 제외
             }).lean();
 
@@ -145,7 +142,7 @@ class PaymentService {
                         { _id: ic._id }, // Mongoose의 _id 사용
                         {
                             reward_paid: true,
-                            reward_paid_at: nowKST(), // 한국 시간으로 통일
+                            reward_paid_at: new Date(), // 한국 시간으로 통일
                             payment_tx_hash: paymentResult.transactionHash
                         }
                     );
@@ -188,7 +185,7 @@ class PaymentService {
                     { id: contract.id },
                     {
                         refund_processed: true,
-                        refund_processed_at: nowKST(), // 한국 시간으로 통일
+                        refund_processed_at: new Date(), // 한국 시간으로 통일
                         refund_tx_hash: refundTxResult.transactionHash
                     }
                 );
@@ -265,7 +262,7 @@ class PaymentService {
                 { _id: ic._id }, // Mongoose의 _id 사용
                 {
                     reward_paid: true,
-                    reward_paid_at: nowKST(), // 한국 시간으로 통일
+                    reward_paid_at: new Date(), // 한국 시간으로 통일
                     payment_tx_hash: paymentResult.transactionHash
                 }
             );
@@ -321,7 +318,7 @@ class PaymentService {
                 { _id: contract._id }, // _id 사용
                 {
                     refund_processed: true,
-                    refund_processed_at: nowKST(), // 한국 시간으로 통일
+                    refund_processed_at: new Date(),
                     refund_tx_hash: refundResult.transactionHash
                 }
             );
@@ -376,7 +373,7 @@ class PaymentService {
                     influencerId: ic.influencer_id,
                     reviewStatus: ic.review_status,
                     rewardPaid: ic.reward_paid,
-                    rewardPaidAt: ic.reward_paid_at ? nowKST(ic.reward_paid_at).toISOString() : null, // KST로 변환하여 ISO 문자열로 반환
+                    rewardPaidAt: ic.reward_paid_at ? ic.reward_paid_at.toISOString() : null,
                     paymentTxHash: ic.payment_tx_hash
                 }))
             };

@@ -114,7 +114,7 @@ exports.readContracts = async (req, res) => {
 
         // 상태별 필터링
         let statusFilter = {};
-        const now = nowKST();
+        const now = new Date();
         if (status === 'pending') {
             statusFilter = { upload_start_date: { $gt: now }};
         } else if (status === 'active') {
@@ -230,7 +230,7 @@ exports.readInfluencers = async (req, res) => {
         const smartContractId = contract.smartContractId;
 
         // 리뷰 신청 가능 여부 계산
-        const today = nowKST();
+        const today = new Date();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
         const reviewDeadline = new Date(uploadEnd);
@@ -347,7 +347,7 @@ exports.payInfluencers = async (req, res) => {
         }
 
         // 오늘이 업로드 기간 내인지 확인하기
-        const now = nowKST();
+        const now = new Date();
         const depositDeadline = new Date(contract.upload_end_date);
         depositDeadline.setDate(depositDeadline.getDate() + 1);
         if (now < contract.upload_start_date || now > depositDeadline) {
@@ -483,7 +483,7 @@ exports.ask = async (req, res) => {
         }
 
         // 리뷰 가능 기간 계산
-        const today = nowKST();
+        const today = new Date();
         const uploadStart = new Date(contract.upload_start_date);
         const uploadEnd = new Date(contract.upload_end_date);
         const reviewDeadline = new Date(uploadEnd);
