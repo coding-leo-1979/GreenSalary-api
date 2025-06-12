@@ -30,7 +30,7 @@ async function URLanalysis(contract_title, influencer_name, site_url, image_url,
         });
 
         if (aiResponse.data) {
-            const { keywordTest, conditionTest, wordCountTest, imageCountTest, pdf_url } = aiResponse.data;
+            const { keywordTest, conditionTest, wordCountTest, imageCountTest, pdf_url, image_urls } = aiResponse.data;
             
             // InfluencerContract 업데이트
             if (influencerContract) {
@@ -38,15 +38,11 @@ async function URLanalysis(contract_title, influencer_name, site_url, image_url,
                 influencerContract.conditionTest = conditionTest;
                 influencerContract.wordCountTest = wordCountTest;
                 influencerContract.imageCountTest = imageCountTest;
+                influencerContract.pdf_images_url = image_urls;
 
                 // 모든 테스트가 통과한 경우
                 const allTestsPassed = keywordTest && conditionTest && wordCountTest && imageCountTest;
                 influencerContract.review_status = allTestsPassed ? 'APPROVED' : 'REJECTED';
-
-                if (pdf_url) {
-                    const baseUrl = process.env.AI_PDF_API.replace(/\/+$/, '');
-                    influencerContract.pdf_url = `${baseUrl}${pdf_url}`;
-                }
 
                 await influencerContract.save();
             }
