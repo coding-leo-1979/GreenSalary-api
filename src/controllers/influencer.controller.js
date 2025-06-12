@@ -312,9 +312,9 @@ exports.readContracts = async (req, res) => {
         let filtered = result;
         if (status !== 'ALL') {
             if (status === 'PAID') {
-                filtered = result.filter(item => item.reward_paid === true);
+                filtered = result.filter(item => item.rewardPaid === true);
             } else {
-                filtered = result.filter(item => item.review_status === status);
+                filtered = result.filter(item => item.status === status);
             }
         }
 
