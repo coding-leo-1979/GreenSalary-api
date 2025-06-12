@@ -39,6 +39,10 @@ const contractSchema = new mongoose.Schema({
   smartContractId: { type: Number, required: true },
   smartContractAddress: { type: String },
 
+  // 결제 관련 필드
+  deposit_at: { type: Date },
+  deposit_tx_hash: { type: String },
+
   // 환불 관련 필드
   refund_processed: { type: Boolean, default: false },
   refund_processed_at: { type: Date, default: null },

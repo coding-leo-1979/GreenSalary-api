@@ -44,7 +44,9 @@ exports.createContract = async (req, res) => {
             media,
             description,
             photo_url,
-            smartContractId
+            smartContractId,
+            deposit_at,
+            deposit_tx_hash
         } = req.body;
 
         // 필수 항목 검증
@@ -72,7 +74,9 @@ exports.createContract = async (req, res) => {
             },
             description: description || '',
             photo_url,
-            smartContractId
+            smartContractId,
+            deposit_at,
+            deposit_tx_hash
             // ⚠️ id, access_code는 Schema에서 자동 생성 및 중복 방지
         });
 
@@ -257,7 +261,7 @@ exports.readInfluencers = async (req, res) => {
                 url: ic.url,
                 keywordTest: ic.keywordTest,
                 conditionTest: ic.conditionTest,
-                pdf_url: ic.pdf_url,
+                pdf_images_url: ic.pdf_images_url,
 
                 review_status,
                 reward_paid: ic.reward_paid,
@@ -411,6 +415,26 @@ exports.readTransactions = async (req, res) => {
             return res.status(404).json({ message: '계약이 존재하지 않습니다.' });
         }
 
+        const headerResponse = [];
+        if (contract.deposit_at) {
+            headerResponse.push({
+                influencer_name: "[입금] 그린샐러리",
+                amount: parseInt(contract.reward) * contract.recruits,
+                paid_at: contract.deposit_at
+            });
+        }
+
+        if (contract.refund_processed && contract.refund_processed_at) {
+            const refundedRecruits = contract.recruits - contract.participants;
+            const refundAmount = refundedRecruits > 0 ? parseInt(contract.reward) * refundedRecruits : 0;
+
+            headerResponse.push({
+                influencer_name: "[환불] 그린샐러리",
+                amount: refundAmount,
+                paid_at: contract.refund_processed_at
+            });
+        }
+
         const sortOrder = sort === 'oldest' ? 1 : -1;
 
         const transactions = await InfluencerContract
@@ -428,7 +452,7 @@ exports.readTransactions = async (req, res) => {
             })
         );
 
-        return res.status(200).json(response);
+        return res.status(200).json(...headerResponse, ...response);
     } catch (error) {
         console.error('readPayments error:', error);
         return res.status(500).json({ message: '서버 오류가 발생했습니다.' });

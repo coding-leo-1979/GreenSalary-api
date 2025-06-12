@@ -407,8 +407,14 @@ exports.inputURL = async (req, res) => {
             return res.status(404).json({ message: '계약 정보가 존재하지 않습니다.' });
         }
 
+        // AI 분석 중일 때 URL 제출 불가
+        if (influencerContract.analysis_status === 'analyzing') {
+            return res.status(404).json({ message: 'AI 분석이 진행 중입니다. 분석이 완료된 이후 다시 시도해주세요.' });
+        }
+
         // URL 저장
         influencerContract.url = url;
+        influencerContract.analysis_status = 'analyzing';
         await influencerContract.save();
 
         res.status(200).json({
@@ -468,7 +474,7 @@ exports.readURL = async (req, res) => {
             review_status: influencerContract.review_status,
             reward_paid: influencerContract.reward_paid,
             joinId: influencerContract.influencerContractId,
-            pdf_url: influencerContract.pdf_url
+            pdf_images_url: influencerContract.influencerContract
         })
 
     } catch (error) {
