@@ -419,18 +419,18 @@ exports.readTransactions = async (req, res) => {
         if (contract.deposit_at) {
             headerResponse.push({
                 influencer_name: "[입금] 그린샐러리",
-                amount: parseInt(contract.reward) * contract.recruits,
+                amount: String(Number(contract.reward) * contract.recruits),
                 paid_at: contract.deposit_at
             });
         }
 
         if (contract.refund_processed && contract.refund_processed_at) {
             const refundedRecruits = contract.recruits - contract.participants;
-            const refundAmount = refundedRecruits > 0 ? parseInt(contract.reward) * refundedRecruits : 0;
+            const refundAmount = refundedRecruits > 0 ? Number(contract.reward) * refundedRecruits : 0;
 
             headerResponse.push({
                 influencer_name: "[환불] 그린샐러리",
-                amount: refundAmount,
+                amount: String(refundAmount),
                 paid_at: contract.refund_processed_at
             });
         }
