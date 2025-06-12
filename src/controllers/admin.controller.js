@@ -6,14 +6,6 @@ const Influencer = require('../models/influencer');
 const InfluencerContract = require('../models/influencer_contract');
 const influencer_contract = require('../models/influencer_contract');
 
-// 한국 시간
-function nowKST() {
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const koreaTimeDiff = 9 * 60 * 60 * 1000;
-    return new Date(utc + koreaTimeDiff);
-}
-
 // 문의 목록 조회하기
 // GET /api/admin/ask?sort=latest&asker=all
 exports.readAsks = async (req, res) => {
