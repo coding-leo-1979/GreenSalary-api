@@ -416,17 +416,6 @@ exports.readTransactions = async (req, res) => {
             });
         }
 
-        if (contract.refund_processed && contract.refund_processed_at) {
-            const refundedRecruits = contract.recruits - contract.participants;
-            const refundAmount = refundedRecruits > 0 ? Number(contract.reward) * refundedRecruits : 0;
-
-            headerResponse.push({
-                influencer_name: "[환불] 그린샐러리",
-                amount: String(refundAmount),
-                paid_at: contract.refund_processed_at
-            });
-        }
-
         const sortOrder = sort === 'oldest' ? 1 : -1;
 
         const transactions = await InfluencerContract
@@ -443,6 +432,18 @@ exports.readTransactions = async (req, res) => {
                 };
             })
         );
+        
+        if (contract.refund_processed && contract.refund_processed_at) {
+            const paidCount = transactions.length;
+            const refundedRecruits = contract.recruits - paidCount;
+            const refundAmount = refundedRecruits > 0 ? Number(contract.reward) * refundedRecruits : 0;
+
+            headerResponse.push({
+                influencer_name: "[환불] 그린샐러리",
+                amount: String(refundAmount),
+                paid_at: contract.refund_processed_at
+            });
+        }
 
         return res.status(200).json([...headerResponse, ...response]);
     } catch (error) {
